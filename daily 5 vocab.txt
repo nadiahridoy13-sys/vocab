@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Daily Vocab</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f2f2f7;
+      color: #1c1c1e;
+      padding: 16px;
+      padding-bottom: 40px;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+    .subtitle { color: #8e8e93; font-size: 15px; margin-bottom: 20px; }
+    
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .word-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .word { font-size: 24px; font-weight: 700; }
+    .phonetic { color: #8e8e93; font-size: 14px; margin-top: 2px; }
+    .speak-btn {
+      background: #007aff22;
+      border: none;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      font-size: 18px;
+      color: #007aff;
+      cursor: pointer;
+    }
+    .label { font-size: 12px; color: #8e8e93; margin-top: 12px; margin-bottom: 3px; }
+    .meaning { font-size: 16px; line-height: 1.4; }
+    .synonyms { font-size: 14px; color: #3a3a3c; }
+    .example { font-size: 14px; font-style: italic; color: #3a3a3c; }
+    
+    .quiz-btn {
+      display: block;
+      width: 100%;
+      background: #007aff;
+      color: white;
+      border: none;
+      padding: 16px;
+      font-size: 17px;
+      font-weight: 600;
+      border-radius: 14px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+    
+    /* Quiz styles */
+    #quiz-screen, #result-screen { display: none; }
+    .progress {
+      height: 6px;
+      background: #e5e5ea;
+      border-radius: 3px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background: #007aff;
+      width: 0%;
+      transition: width 0.3s;
+    }
+    .question { font-size: 18px; font-weight: 600; margin-bottom: 18px; line-height: 1.4; }
+    .option {
+      background: white;
+      border: 2px solid #e5e5ea;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .option.correct { border-color: #34c759; background: #34c75918; }
+    .option.wrong { border-color: #ff3b30; background: #ff3b3018; }
+    .next-btn {
+      display: none;
+      width: 100%;
+      background: #007aff;
+      color: white;
+      border: none;
+      padding: 16px;
+      font-size: 17px;
+      font-weight: 600;
+      border-radius: 14px;
+      margin-top: 16px;
+      cursor: pointer;
+    }
+    .score {
+      font-size: 64px;
+      font-weight: 700;
+      text-align: center;
+      margin: 20px 0 8px;
+    }
+    .score-text { text-align: center; color: #8e8e93; margin-bottom: 24px; }
+    .review { background: white; border-radius: 12px; padding: 14px; margin-bottom: 20px; }
+    .back-btn {
+      width: 100%;
+      background: #007aff;
+      color: white;
+      border: none;
+      padding: 16px;
+      font-size: 17px;
+      font-weight: 600;
+      border-radius: 14px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HOME SCREEN -->
+  <div id="home-screen">
+    <h1>Today's Words</h1>
+    <p class="subtitle">5 new words for today</p>
+    <div id="words-container"></div>
+    <button class="quiz-btn" onclick="startQuiz()">Start Quiz</button>
+  </div>
+
+  <!-- QUIZ SCREEN -->
+  <div id="quiz-screen">
+    <div class="progress"><div class="progress-bar" id="progress-bar"></div></div>
+    <div class="question" id="question-text"></div>
+    <div id="options-container"></div>
+    <button class="next-btn" id="next-btn" onclick="nextQuestion()">Next</button>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div id="result-screen">
+    <h1 style="text-align:center;">Quiz Completed!</h1>
+    <div class="score" id="score-percent">0%</div>
+    <p class="score-text" id="score-text">0 / 0 correct</p>
+    <div class="review" id="review-box" style="display:none;">
+      <strong>Words to Review</strong>
+      <div id="wrong-list"></div>
+    </div>
+    <button class="back-btn" onclick="goHome()">Back to Home</button>
+  </div>
+
+<script>
+  // ===== WORD DATA =====
+  const allWords = [
+    {
+      word: "meticulous",
+      phonetic: "/məˈtɪkjələs/",
+      meaning: "showing great attention to detail; very careful and precise",
+      synonyms: ["careful", "thorough", "precise"],
+      example: "The researcher was meticulous in recording the data."
+    },
+    {
+      word: "ubiquitous",
+      phonetic: "/juːˈbɪkwɪtəs/",
+      meaning: "present, appearing, or found everywhere",
+      synonyms: ["everywhere", "omnipresent", "pervasive"],
+      example: "Smartphones have become ubiquitous in modern society."
+    },
+    {
+      word: "alleviate",
+      phonetic: "/əˈliːvieɪt/",
+      meaning: "to make suffering, problems, or pain less severe",
+      synonyms: ["ease", "reduce", "relieve"],
+      example: "The new policy aims to alleviate traffic congestion."
+    },
+    {
+      word: "profound",
+      phonetic: "/prəˈfaʊnd/",
+      meaning: "very great or intense; having deep meaning",
+      synonyms: ["deep", "intense", "significant"],
+      example: "The discovery had a profound effect on science."
+    },
+    {
+      word: "deteriorate",
+      phonetic: "/dɪˈtɪəriəreɪt/",
+      meaning: "to become worse over time",
+      synonyms: ["worsen", "decline", "degenerate"],
+      example: "Air quality continues to deteriorate in big cities."
+    },
+    {
+      word: "compulsory",
+      phonetic: "/kəmˈpʌlsəri/",
+      meaning: "required by law or rule; mandatory",
+      synonyms: ["mandatory", "obligatory", "required"],
+      example: "Wearing a helmet is compulsory for motorcyclists."
+    },
+    {
+      word: "fluctuate",
+      phonetic: "/ˈflʌktʃueɪt/",
+      meaning: "to change or vary frequently",
+      synonyms: ["vary", "shift", "oscillate"],
+      example: "Oil prices tend to fluctuate throughout the year."
+    },
+    {
+      word: "inevitable",
+      phonetic: "/ɪnˈevɪtəbl/",
+      meaning: "certain to happen; unavoidable",
+      synonyms: ["unavoidable", "certain", "inescapable"],
+      example: "Change is inevitable in every industry."
+    },
+    {
+      word: "substantial",
+      phonetic: "/səbˈstænʃl/",
+      meaning: "of considerable importance, size, or worth",
+      synonyms: ["significant", "considerable", "large"],
+      example: "There has been a substantial increase in demand."
+    },
+    {
+      word: "vulnerable",
+      phonetic: "/ˈvʌlnərəbl/",
+      meaning: "exposed to the possibility of being harmed",
+      synonyms: ["at risk", "defenseless", "exposed"],
+      example: "Children are particularly vulnerable to online risks."
+    }
+  ];
+
+  // Select 5 words based on day (simple daily rotation)
+  function getDailyWords() {
+    const day = Math.floor(Date.now() / 86400000); // days since 1970
+    const start = day % allWords.length;
+    const selected = [];
+    for (let i = 0; i < 5; i++) {
+      selected.push(allWords[(start + i) % allWords.length]);
+    }
+    return selected;
+  }
+
+  const dailyWords = getDailyWords();
+  let questions = [];
+  let currentQ = 0;
+  let score = 0;
+  let wrongWords = [];
+  let answered = false;
+
+  // ===== HOME =====
+  function renderHome() {
+    const container = document.getElementById("words-container");
+    container.innerHTML = "";
+    dailyWords.forEach(w => {
+      container.innerHTML += `
+        <div class="card">
+          <div class="word-row">
+            <div>
+              <div class="word">${w.word}</div>
+              <div class="phonetic">${w.phonetic}</div>
+            </div>
+            <button class="speak-btn" onclick="speak('${w.word}')">🔊</button>
+          </div>
+          <div class="label">Meaning</div>
+          <div class="meaning">${w.meaning}</div>
+          <div class="label">Synonyms</div>
+          <div class="synonyms">${w.synonyms.join(", ")}</div>
+          <div class="label">Example</div>
+          <div class="example">${w.example}</div>
+        </div>
+      `;
+    });
+  }
+
+  function speak(text) {
+    if ("speechSynthesis" in window) {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "en-US";
+      u.rate = 0.85;
+      speechSynthesis.speak(u);
+    }
+  }
+
+  // ===== QUIZ =====
+  function startQuiz() {
+    questions = [];
+    dailyWords.forEach(w => {
+      // Meaning question
+      let opts = [w.meaning];
+      const others = dailyWords.filter(x => x.word !== w.word).map(x => x.meaning);
+      opts = opts.concat(others.sort(() => 0.5 - Math.random()).slice(0, 3));
+      opts.sort(() => 0.5 - Math.random());
+      questions.push({
+        text: What is the meaning of "${w.word}"?,
+        options: opts,
+        answer: w.meaning,
+        word: w
+      });
+
+      // Synonym question
+      if (w.synonyms.length) {
+        const correct = w.synonyms[0];
+        let sopts = [correct];
+        const otherSyn = dailyWords
+          .filter(x => x.word !== w.word)
+          .map(x => x.synonyms[0] || x.word);
+        sopts = sopts.concat(otherSyn.sort(() => 0.5 - Math.random()).slice(0, 3));
+        sopts.sort(() => 0.5 - Math.random());
+        questions.push({
+          text: Which is a synonym of "${w.word}"?,
+          options: sopts,
+          answer: correct,
+          word: w
+        });
+      }
+    });
+
+    questions.sort(() => 0.5 - Math.random());
+    currentQ = 0;
+    score = 0;
+    wrongWords = [];
+    answered = false;
+
+    document.getElementById("home-screen").style.display = "none";
+    document.getElementById("result-screen").style.display = "none";
+    document.getElementById("quiz-screen").style.display = "block";
+    showQuestion();
+  }
+
+  function showQuestion() {
+    answered = false;
+    const q = questions[currentQ];
+    document.getElementById("question-text").innerText = q.text;
+    document.getElementById("progress-bar").style.width = ((currentQ / questions.length) * 100) + "%";
+    document.getElementById("next-btn").style.display = "none";
+
+    const container = document.getElementById("options-container");
+    container.innerHTML = "";
+    q.options.forEach(opt => {
+      const div = document.createElement("div");
+      div.className = "option";
+      div.innerText = opt;
+      div.onclick = () => selectAnswer(div, opt, q);
+      container.appendChild(div);
+    });
+  }
+
+  function selectAnswer(div, selected, q) {
+    if (answered) return;
+    answered = true;
+
+    const options = document.querySelectorAll(".option");
+    options.forEach(o => {
+      if (o.innerText === q.answer) o.classList.add("correct");
+      if (o.innerText === selected && selected !== q.answer) o.classList.add("wrong");
+    });
+
+    if (selected === q.answer) {
+      score++;
+    } else {
+      if (!wrongWords.find(w => w.word === q.word.word)) {
+        wrongWords.push(q.word);
+      }
+    }
+
+    document.getElementById("next-btn").style.display = "block";
+    document.getElementById("next-btn").innerText =
+      currentQ + 1 >= questions.length ? "See Result" : "Next";
+  }
+
+  function nextQuestion() {
+    currentQ++;
+    if (currentQ >= questions.length) {
+      showResult();
+    } else {
+      showQuestion();
+    }
+  }
+
+  function showResult() {
+    document.getElementById("quiz-screen").style.display = "none";
+    document.getElementById("result-screen").style.display = "block";
+
+    const percent = Math.round((score / questions.length) * 100);
+    document.getElementById("score-percent").innerText = percent + "%";
+    document.getElementById("score-percent").style.color = percent >= 70 ? "#34c759" : "#ff9500";
+    document.getElementById("score-text").innerText = ${score} / ${questions.length} correct;
+
+    if (wrongWords.length) {
+      document.getElementById("review-box").style.display = "block";
+      document.getElementById("wrong-list").innerHTML = wrongWords
+        .map(w => <div>• ${w.word}</div>)
+        .join("");
+    } else {
+      document.getElementById("review-box").style.display = "none";
+    }
+  }
+
+  function goHome() {
+    document.getElementById("result-screen").style.display = "none";
+    document.getElementById("home-screen").style.display = "block";
+  }
+
+  // Start
+  renderHome();
+</script>
+</body>
+</html>
+
+	
